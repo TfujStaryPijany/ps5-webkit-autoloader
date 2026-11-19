@@ -18,7 +18,7 @@ import shutil
 import subprocess
 import sys
 
-from gen_version import get_version_info
+from gen_version import app_entry, get_version_info
 
 
 def copy_tree(src, dst):
@@ -46,6 +46,7 @@ def main():
     parser.add_argument("--elfldr-bin", default=None, help="Path to elfldr ELF binary")
     parser.add_argument("--payload-name", default="autoload.elf", help="Virtual name for target payload ELF")
     parser.add_argument("--payload-bin", default=None, help="Path to target payload ELF binary")
+    parser.add_argument("--app-name", default=None, help="App name shown in the index.html title")
     args = parser.parse_args()
 
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +56,15 @@ def main():
     version_info = get_version_info()
     version = args.version or version_info["full"]
     build_time = args.build_time or version_info["build_time"]
+    app_name = args.app_name or version_info["app_name"]
+
+    # index.html is always staged (auto exploit choice; also the PC host page).
+    # Each app of the variant with its own entry gets <entry> forcing its exploit
+    # through the orchestrator's second payload argument.
+    entries = {"index.html": (app_name, "")}
+    for app in version_info["apps"]:
+        if app_entry(app) != "index.html":
+            entries[app_entry(app)] = (app["name"], app["exploit"])
 
     # Ensure lua runtime in remote-loader is compiled
     runtime_builder = os.path.join(loader_dir, "tools", "lua_runtime", "build_runtime.py")
@@ -95,21 +105,24 @@ def main():
     shutil.copy2(os.path.join(repo_root, "frontend", "autoloader", "style.css"), os.path.join(output_dir, "style.css"))
     shutil.copy2(os.path.join(repo_root, "frontend", "autoloader", "app.js"), os.path.join(output_dir, "app.js"))
 
-    # 6. Generate index.html from template
+    # 6. Generate the entry pages from the template
     template_path = os.path.join(repo_root, "frontend", "autoloader", "index.html")
     with open(template_path, "r", encoding="utf-8") as f:
-        html = f.read()
+        template = f.read()
 
-    html = html.replace("[[VERSION_PLACEHOLDER]]", version)
-    html = html.replace("[[BUILD_TIME_PLACEHOLDER]]", build_time)
-    html = html.replace("[[ELFLDR_FILENAME]]", args.elfldr_name)
-    html = html.replace("[[PAYLOAD_ELF_FILENAME]]", args.payload_name)
-
-    with open(os.path.join(output_dir, "index.html"), "w", encoding="utf-8") as f:
-        f.write(html)
+    for entry, (name, exploit) in entries.items():
+        html = template.replace("[[APP_NAME_PLACEHOLDER]]", name)
+        html = html.replace("[[EXPLOIT_PLACEHOLDER]]", exploit)
+        html = html.replace("[[VERSION_PLACEHOLDER]]", version)
+        html = html.replace("[[BUILD_TIME_PLACEHOLDER]]", build_time)
+        html = html.replace("[[ELFLDR_FILENAME]]", args.elfldr_name)
+        html = html.replace("[[PAYLOAD_ELF_FILENAME]]", args.payload_name)
+        with open(os.path.join(output_dir, entry), "w", encoding="utf-8") as f:
+            f.write(html)
 
     print(f"Staged modular autoloader into {output_dir}")
-    print(f"  entry:       index.html ({len(html)} bytes)")
+    for entry, (name, exploit) in entries.items():
+        print(f"  entry:       {entry} ({name}, exploit: {exploit or 'auto'})")
     print(f"  elfldr:      shared/{args.elfldr_name}")
     print(f"  payload ELF: {args.payload_name}")
     return 0

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>WebKit Autoloader v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])</title>
+  <title>[[APP_NAME_PLACEHOLDER]] v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -19,15 +19,15 @@
   <script src="./src/rop.js"></script>
   <script src="./src/utils/syscalls.js"></script>
   <script>
-    window.WKAL_PAGE = { version: "[[VERSION_PLACEHOLDER]]", buildTime: "[[BUILD_TIME_PLACEHOLDER]]" };
+    window.WKAL_PAGE = { appName: "[[APP_NAME_PLACEHOLDER]]", version: "[[VERSION_PLACEHOLDER]]", buildTime: "[[BUILD_TIME_PLACEHOLDER]]" };
     window.LOADER_CONFIG = {
       ELFLDR_ELF: "shared/[[ELFLDR_FILENAME]]"
     };
     window.STANDALONE = {
-      title: "WebKit Autoloader v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])",
+      title: "[[APP_NAME_PLACEHOLDER]] v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])",
       modular: true,
       payloads: [
-        { name: "autoloader.js", url: "payloads/autoloader.js", args: ["[[PAYLOAD_ELF_FILENAME]]"] }
+        { name: "autoloader.js", url: "payloads/autoloader.js", args: ["[[PAYLOAD_ELF_FILENAME]]", "[[EXPLOIT_PLACEHOLDER]]"] }
       ]
     };
   </script>

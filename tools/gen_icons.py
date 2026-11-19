@@ -7,6 +7,9 @@ every generated asset gets a dark background and ~10% padding added.
 Outputs:
   assets/icon0.png                        PS5 homescreen icon (512x512)
   assets/icon.ico                         Windows .exe icon (16-256px)
+  assets/icon0-<id>.png  (--apps)         per-app homescreen icons of the
+                                          WKAL_VARIANT; apps with a color get
+                                          a colored band with their label
 
 Rendering: rsvg-convert when available (installed in the ps5-webkit-autoloader-sdk
 docker image), qlmanage as the built-in macOS fallback. Run via `make icons`.
@@ -66,6 +69,67 @@ def build_wrapper_svg(master_src):
     )
 
 
+LABEL_FONT = "DejaVu Sans"
+BAND_HEIGHT = 230
+
+
+def require_label_font():
+    """rsvg-convert silently drops text without fonts; fail loudly instead."""
+    if not shutil.which("fc-list"):
+        return  # macOS qlmanage path: system fonts are always present
+    fonts = subprocess.run(["fc-list", ":family=" + LABEL_FONT + ":style=Bold"],
+                           capture_output=True, text=True).stdout
+    if not fonts.strip():
+        sys.exit(f"Error: font '{LABEL_FONT} Bold' not found for icon labels "
+                 "(build inside the SDK docker image).")
+
+
+def add_band(wrapper_svg, color, label):
+    """Colored band along the bottom edge carrying the app label."""
+    y = VIEWBOX - BAND_HEIGHT
+    size = 170 if len(label) <= 5 else 150
+    band = (
+        '  <rect x="0" y="{y}" width="{vb}" height="{h}" fill="{c}"/>\n'
+        '  <rect x="0" y="{y}" width="{vb}" height="12" fill="#000" fill-opacity="0.3"/>\n'
+        '  <text x="{cx}" y="{ty}" text-anchor="middle" font-family="{f}" '
+        'font-weight="bold" font-size="{s}" letter-spacing="6" fill="#fff" '
+        'stroke="#000" stroke-opacity="0.35" stroke-width="6" paint-order="stroke">{t}</text>\n'
+    ).format(vb=VIEWBOX, y=y, h=BAND_HEIGHT, c=color, cx=VIEWBOX // 2,
+             ty=y + BAND_HEIGHT // 2 + int(size * 0.36) + 6, f=LABEL_FONT, s=size, t=label)
+    return wrapper_svg.replace("</svg>\n", band + "</svg>\n")
+
+
+def write_if_changed(path, data):
+    try:
+        with open(path, "rb") as f:
+            if f.read() == data:
+                return
+    except OSError:
+        pass
+    with open(path, "wb") as f:
+        f.write(data)
+
+
+def generate_app_icons(wrapper, render, tmp):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from gen_version import app_icon_path, get_variant
+
+    _, variant = get_variant()
+    if any(app.get("label") for app in variant["apps"]):
+        require_label_font()
+    for app in variant["apps"]:
+        if app.get("label"):
+            svg = add_band(wrapper, app["color"], app["label"])
+        else:
+            svg = wrapper
+        svg_path = os.path.join(tmp, f"icon-{app['id']}.svg")
+        with open(svg_path, "w") as f:
+            f.write(svg)
+        out = os.path.join(ROOT, app_icon_path(app))
+        write_if_changed(out, render(svg_path, 512))
+        print(f"  {os.path.relpath(out, ROOT)} ({os.path.getsize(out)} bytes)")
+
+
 def rsvg_render(svg_path, size):
     """Render the SVG to PNG bytes at the given size via rsvg-convert."""
     return subprocess.run(
@@ -118,6 +182,12 @@ def main():
 
     wrapper = build_wrapper_svg(master_src)
     render = find_renderer()
+
+    if sys.argv[1:] == ["--apps"]:
+        with tempfile.TemporaryDirectory(prefix="wkal-icon-") as tmp:
+            print("Generated per-app icons:")
+            generate_app_icons(wrapper, render, tmp)
+        return 0
 
     with tempfile.TemporaryDirectory(prefix="wkal-icon-") as tmp:
         wrapper_path = os.path.join(tmp, "icon-bg.svg")

@@ -1,11 +1,11 @@
 {
-    "titleId": "WKAL00001",
+    "titleId": "[[TITLE_ID_PLACEHOLDER]]",
     "applicationCategoryType": 65536,
-    "deeplinkUri": "http://127.0.0.1:18181/app/index.html",
+    "deeplinkUri": "http://127.0.0.1:[[PORT_PLACEHOLDER]]/app/[[ENTRY_PLACEHOLDER]]",
     "localizedParameters": {
         "defaultLanguage": "en-US",
         "en-US": {
-            "titleName": "WebKit Autoloader v[[VERSION_PLACEHOLDER]]"
+            "titleName": "[[APP_NAME_PLACEHOLDER]] v[[VERSION_PLACEHOLDER]]"
         }
     }
 }

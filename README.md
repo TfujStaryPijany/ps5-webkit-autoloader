@@ -12,6 +12,47 @@
     <a href="https://github.com/itsPLK/ps5-lua-autoloader">Lua</a>
 </p>
 
+## About this fork: separate Poops and Relapse shortcuts
+
+This is a fork of [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)
+(based on v0.7.1). All credit for the autoloader, the exploits and the tooling
+goes to the original authors. The fork only changes **how the exploit is chosen**.
+
+**Why:** upstream picks the exploit automatically: Relapse whenever a network
+connection is active, Poops only when offline. On my PS5 (FW 11.40) Relapse
+did not work, while Poops does. But I want to stay connected to the network
+(FTP and other payloads that need it), so with the automatic choice I could
+never get Poops without pulling the network first.
+
+**What changed:** one installer (`VARIANT=dual`) now adds **two homescreen
+shortcuts**, each forcing its exploit regardless of the network state:
+
+| Shortcut | Exploit |
+|---|---|
+| **WebKit Autoloader Poops** | always Poops, also with the network connected |
+| **WebKit Autoloader Relapse** | always Relapse |
+
+Icons carry a POOPS / RELAPSE label. The original "WebKit Autoloader" shortcut,
+if installed, is not touched. Build and technical details are in
+[Dual build](#dual-build-one-installer-two-homescreen-shortcuts) below.
+
+Summary of code changes:
+
+- `payloads/autoloader.js`: the exploit can be forced through the second
+  payload argument of the entry page; the automatic rules only apply when the
+  firmware cannot run the forced exploit (Poops above 12.00, Relapse on 9.05).
+- `src/app_installer.c`: installs several homescreen apps from one installer
+  (replaces the shared single-app installer from remote-loader for this build).
+- `tools/gen_version.py`: variant table (`auto` = upstream, `dual`) with title
+  IDs, port, names and per-app `param.json`; `tools/gen_icons.py`: labelled icons.
+- `tools/build_modular_page.py`, `tools/gen_file_registry.py`, `Makefile`:
+  `poops.html` / `relapse.html` entry pages and their `/app/` pointers cached
+  in the same AppCache.
+- `build_dual.sh` (installer ELF + PC host via Docker), `build_exe_wine.sh`
+  (Windows `.exe` via PyInstaller under Wine).
+- Tests: forced-exploit selection and the multi-app installer
+  (`tools/test_app_installer_native.py`).
+
 ## Why WebKit Autoloader?
 
 WebKit exploits are usually loaded by pointing your PS5's DNS at some server hosted by someone on the internet. That means you're putting your trust in whoever runs that server — and if it goes down, changes, or disappears, your setup breaks.
@@ -146,3 +187,38 @@ This project is licensed under the GPL-3.0 License.
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=itsplk/ps5-webkit-autoloader&type=date&legend=bottom-right" />
  </picture>
 </a>
+
+## Dual build: one installer, two homescreen shortcuts
+
+`make VARIANT=dual` (or `./build_dual.sh` with Docker) builds one installer that
+caches the autoloader once and installs two homescreen apps, each forcing its
+exploit instead of the automatic choice:
+
+| Shortcut                  | Title ID  | Opens                                   | Exploit |
+|---------------------------|-----------|-----------------------------------------|---------|
+| WebKit Autoloader Poops   | WKAL00002 | `http://127.0.0.1:18182/app/poops.html`   | Poops   |
+| WebKit Autoloader Relapse | WKAL00003 | `http://127.0.0.1:18182/app/relapse.html` | Relapse (needs a LAN/Wi-Fi link) |
+
+Port 18182 is its own WebKit origin, so the original WebKit Autoloader
+(WKAL00001, port 18181) is left untouched. Icons get a labelled colour band.
+The forced exploit is passed as the orchestrator's second payload argument
+and only falls back to the automatic rules where the firmware cannot run it
+(Poops above 12.00, Relapse on 9.05).
+
+```sh
+./build_dual.sh        # webkit-autoloader-dual-installer_v*.elf + -host_v*.py
+HOST_ONLY=1 ./build_dual.sh
+```
+
+Send the ELF to the ELF loader once, or run the PC setup host
+`webkit-autoloader-dual-host_v*.py`. `./build_exe_wine.sh` packs it into a
+Windows `.exe` with PyInstaller under Wine (own Wine prefix, first run downloads
+Python 3.11.9 for Windows and PyInstaller). Or on Windows itself:
+
+```bat
+pip install pyinstaller
+pyinstaller --onefile --python-option "X utf8" --icon assets\icon.ico webkit-autoloader-dual-host_v<version>.py
+```
+
+Note: the installer's "clear WebKit data" repair wipes the whole per-user
+`webkit/shell` directory, i.e. the caches of all WebKit Autoloader installs.

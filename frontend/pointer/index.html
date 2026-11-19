@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<title>WebKit Autoloader v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])</title>
+<title>[[POINTER_NAME_PLACEHOLDER]] v[[VERSION_PLACEHOLDER]] by PLK (built [[BUILD_TIME_PLACEHOLDER]])</title>
 <body style="background:#111;color:#eee;font:24px sans-serif;margin:10%">
 <p id="status">Loading...</p>
 <script>
@@ -24,7 +24,7 @@
 
   fetch(base + '__complete__').then(function (r) { return r.text(); }).then(function (marker) {
     if (marker.trim() !== version) throw new Error('Cache incomplete');
-    var target = base + 'index.html';
+    var target = base + '[[ENTRY_PLACEHOLDER]]';
     if (fwArg) target += '?fw=' + encodeURIComponent(fwArg);
     location.replace(target);
   }).catch(function () {

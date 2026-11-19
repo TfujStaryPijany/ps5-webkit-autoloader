@@ -12,7 +12,8 @@ function setup(file, options = {}) {
   const html = fs.readFileSync(file, 'utf8');
   const code = html.match(/<script>([\s\S]*?)<\/script>/)[1]
     .replaceAll('[[VERSION_PLACEHOLDER]]', 'test-version')
-    .replaceAll('[[APP_DIR_PLACEHOLDER]]', 'test-version');
+    .replaceAll('[[APP_DIR_PLACEHOLDER]]', 'test-version')
+    .replaceAll('[[ENTRY_PLACEHOLDER]]', 'index.html');
   const nodes = Object.fromEntries(['status', 'repair', 'progress', 'percent', 'detail', 'progressBar', 'logContainer',
     'cacheCorruptOverlay', 'cancelRepair', 'repairMessage']
     .map(key => [key, { hidden: true, className: '', textContent: '', style: {}, focus() {},

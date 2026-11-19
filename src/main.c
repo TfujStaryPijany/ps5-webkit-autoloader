@@ -89,7 +89,7 @@ int main(void) {
         sleep(1);
     }
 
-    installer_log("[WKALI] WebKit Autoloader Installer v%s by PLK (built %s) starting on port %d...\n",
+    installer_log("[WKALI] " WKAL_APP_NAME " Installer v%s by PLK (built %s) starting on port %d...\n",
                    WKAL_FULL_VERSION, WKAL_BUILD_TIME, WKALI_PORT);
 
     /* Initialize PS5 System Services */
@@ -123,7 +123,7 @@ int main(void) {
 
     if (NULL == daemon) {
         installer_log("[WKALI] Failed to start HTTP daemon!\n");
-        installer_notify("WebKit Autoloader Installer: Error\nHTTP server failed to start");
+        installer_notify(WKAL_APP_NAME " Installer: Error\nHTTP server failed to start");
         return 1;
     }
 
@@ -173,7 +173,7 @@ int main(void) {
     }
 
     if (atomic_load(&install_completed)) {
-        installer_notify("WebKit Autoloader v%s cached successfully!", WKAL_FULL_VERSION);
+        installer_notify(WKAL_APP_NAME " v%s cached successfully!", WKAL_FULL_VERSION);
     }
     installer_log_wakeup();
 

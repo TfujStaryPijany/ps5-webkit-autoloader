@@ -23,12 +23,13 @@
   var bar = element('div', 'progressBar', progress);
   var label = element('div', 'progressLabel', progress);
   var config = window.WKAL_PAGE || {};
+  var appName = config.appName || 'WebKit Autoloader';
   if (config.version) {
-    document.title = 'WebKit Autoloader v' + config.version + ' by PLK' +
+    document.title = appName + ' v' + config.version + ' by PLK' +
       (config.buildTime ? ' (built ' + config.buildTime + ')' : '');
   }
   var footer = element('div', 'footer', document.body);
-  element('div', 'buildInfo', footer, 'WebKit Autoloader' +
+  element('div', 'buildInfo', footer, appName +
     (config.version ? ' v' + config.version : '') + ' by PLK' +
     (config.buildTime ? ' (built ' + config.buildTime + ')' : ''));
   var source = element('div', 'sourceInfo', footer, 'This project is free and open source: ');

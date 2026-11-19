@@ -11,8 +11,18 @@ CFLAGS := -Os -Wall -ffunction-sections -fdata-sections -Iinclude -I$(INSTALLER_
 LDFLAGS := -Wl,--gc-sections
 LIBS := $(TARGET)/lib/libmicrohttpd.a -L$(TARGET)/lib -lpthread \
         -lSceNetCtl -lSceUserService -lSceSystemService -lSceAppInstUtil
-SRCS := src/main.c src/http_server.c $(INSTALLER_COMMON_SRCS)
+# src/app_installer.c replaces the shared single-app installer: it installs
+# every homescreen app of the variant (two for VARIANT=dual).
+SRCS := src/main.c src/http_server.c src/app_installer.c \
+        $(filter-out %/app_installer.c,$(INSTALLER_COMMON_SRCS))
 ELF := installer.elf
+
+# Build variant (table: tools/gen_version.py VARIANTS):
+#   auto - upstream behaviour, one homescreen app with runtime exploit choice
+#   dual - one installer that adds two homescreen apps: Poops and Relapse
+# Use `make clean all` when switching variants.
+VARIANT ?= auto
+export WKAL_VARIANT := $(VARIANT)
 
 # One version per make invocation, including dirty-tree builds.
 ifndef BUILD_VERSION
@@ -20,8 +30,10 @@ BUILD_VERSION := $(shell $(PYTHON) tools/gen_version.py --print)
 endif
 export BUILD_VERSION
 
+APP_ENTRIES := $(shell WKAL_VARIANT=$(VARIANT) $(PYTHON) tools/gen_version.py --entries)
+
 ifndef BUILD_TITLE
-BUILD_TITLE := $(shell $(PYTHON) tools/gen_version.py --title)
+BUILD_TITLE := $(shell WKAL_VARIANT=$(VARIANT) $(PYTHON) tools/gen_version.py --title)
 endif
 
 # Modular autoloader page carrying autoloader.js (unified orchestrator),
@@ -63,8 +75,13 @@ test:
 # Run on Linux or in the SDK container; PS5 services are stubbed.
 test-native:
 	$(PYTHON) $(LOADER)/tools/installer_common_test.py
+	$(PYTHON) tools/test_app_installer_native.py
 
-icons: $(ICONS) $(INSTALLER_LOGO)
+icons: $(ICONS) $(INSTALLER_LOGO) app-icons
+
+# Per-app homescreen icons (assets/icon0-<id>.png) for the current variant.
+app-icons: assets/icon0.png
+	$(PYTHON) tools/gen_icons.py --apps
 assets/icon0.png: assets/icon.svg tools/gen_icons.py
 	$(PYTHON) tools/gen_icons.py
 assets/icon.ico: assets/icon0.png
@@ -96,6 +113,7 @@ registry: version page $(INSTALLER_LOGO)
 	@mkdir -p $(STAGE)/app/$(BUILD_VERSION)
 	cp frontend/installer-page/index.html $(INSTALLER_LOGO) $(STAGE)/
 	cp frontend/pointer/index.html $(STAGE)/app/index.html
+	for entry in $(APP_ENTRIES); do cp frontend/pointer/index.html $(STAGE)/app/$$entry; done
 	cp -R build/autoloader/. $(STAGE)/app/$(BUILD_VERSION)/
 	@echo "$(BUILD_VERSION)" > $(STAGE)/VERSION
 	$(PYTHON) tools/gen_file_registry.py $(STAGE) $(word 1,$(REGISTRY)) $(word 2,$(REGISTRY))
@@ -118,13 +136,14 @@ host: $(HOST_PAYLOAD) payload-deps assets/icon.ico
 	    --payload-bin $(HOST_PAYLOAD)
 	$(PYTHON) $(LOADER)/tools/build_host.py \
 	    --dir build/host \
-	    --version $(BUILD_VERSION) --name "PS5 WEBKIT AUTOLOADER" --output webkit-autoloader-host.py
+	    --version $(BUILD_VERSION) --name "PS5 WEBKIT AUTOLOADER $(shell echo $(VARIANT) | tr a-z A-Z)" --output webkit-autoloader-host.py
 
 dev: page
 	$(PYTHON) -m http.server 8123 --bind 127.0.0.1 --directory build/autoloader
 
 clean:
 	rm -rf $(STAGE) build/autoloader build/host
-	rm -f $(ELF) $(REGISTRY) include/wkali_version.h webkit-autoloader-host.py
+	rm -f $(ELF) $(REGISTRY) include/wkali_version.h webkit-autoloader-host.py \
+	    assets/param-*.json assets/icon0-*.png
 
-.PHONY: all version print-version test test-native icons payload-deps page registry host dev clean
+.PHONY: all version print-version test test-native icons app-icons payload-deps page registry host dev clean

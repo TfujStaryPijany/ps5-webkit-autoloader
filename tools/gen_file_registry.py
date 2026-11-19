@@ -11,10 +11,11 @@ Usage: gen_file_registry.py <dist_dir> <header_out> <source_out>
 """
 
 import os
+import re
 import sys
 import zlib
 
-from gen_version import get_version_info
+from gen_version import app_entry, get_version_info
 
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -52,6 +53,10 @@ def detect_content_type(path):
 VERSION_PLACEHOLDER = b"[[VERSION_PLACEHOLDER]]"
 BUILD_TIME_PLACEHOLDER = b"[[BUILD_TIME_PLACEHOLDER]]"
 APP_DIR_PLACEHOLDER = b"[[APP_DIR_PLACEHOLDER]]"
+APP_NAME_PLACEHOLDER = b"[[APP_NAME_PLACEHOLDER]]"
+APP_LIST_PLACEHOLDER = b"[[APP_LIST_PLACEHOLDER]]"
+ENTRY_PLACEHOLDER = b"[[ENTRY_PLACEHOLDER]]"
+POINTER_NAME_PLACEHOLDER = b"[[POINTER_NAME_PLACEHOLDER]]"
 
 
 def get_version_info_with_handoff(dist_dir):
@@ -79,16 +84,27 @@ def apply_version_placeholder(path, data, version, build_time, versioned_paths):
     if path.endswith(".html") or path in versioned_paths:
         data = data.replace(VERSION_PLACEHOLDER, version.encode("utf-8"))
         data = data.replace(BUILD_TIME_PLACEHOLDER, build_time.encode("utf-8"))
+        info = get_version_info()
+        data = data.replace(APP_NAME_PLACEHOLDER, info["app_name"].encode("utf-8"))
+        data = data.replace(APP_LIST_PLACEHOLDER,
+                            " or ".join(a["name"] for a in info["apps"]).encode("utf-8"))
     return data
 
 
 def apply_pointer_placeholder(path, data, version):
-    """Replace the tokens in the stable /app/index.html pointer page. It needs
-    the versioned app directory name (for the redirect + marker fetch) and the
-    expected marker content, both of which are the full version string."""
-    if path == "/app/index.html":
+    """Replace the tokens in the stable /app/<entry>.html pointer pages. They
+    need the versioned app directory name (for the redirect + marker fetch),
+    the expected marker content (both the full version string), and the entry
+    page to open: /app/poops.html -> /app/<version>/poops.html."""
+    if re.fullmatch(r"/app/[^/]+\.html", path):
+        entry = path.rsplit("/", 1)[1]
+        info = get_version_info()
+        name = next((a["name"] for a in info["apps"] if app_entry(a) == entry),
+                    info["app_name"])
         data = data.replace(APP_DIR_PLACEHOLDER, version.encode("utf-8"))
         data = data.replace(VERSION_PLACEHOLDER, version.encode("utf-8"))
+        data = data.replace(ENTRY_PLACEHOLDER, entry.encode("utf-8"))
+        data = data.replace(POINTER_NAME_PLACEHOLDER, name.encode("utf-8"))
     return data
 
 
@@ -250,9 +266,9 @@ def main():
         for i, (path, full) in enumerate(files):
             with open(full, "rb") as f:
                 data = f.read()
+            data = apply_pointer_placeholder(path, data, version)
             data = apply_version_placeholder(path, data, version,
                                              version_info["build_time"], versioned_paths)
-            data = apply_pointer_placeholder(path, data, version)
             stored, compressed = compress_entry(data)
             emit_c_array(out, f"file_{i}", stored)
             out.write("\n")

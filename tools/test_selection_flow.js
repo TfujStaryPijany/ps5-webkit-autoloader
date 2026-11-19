@@ -89,7 +89,8 @@ function loadPointer(options) {
   const html = fs.readFileSync('frontend/pointer/index.html', 'utf8');
   const code = html.match(/<script>([\s\S]*?)<\/script>/)[1]
     .replaceAll('[[VERSION_PLACEHOLDER]]', 'test-version')
-    .replaceAll('[[APP_DIR_PLACEHOLDER]]', 'test-version');
+    .replaceAll('[[APP_DIR_PLACEHOLDER]]', 'test-version')
+    .replaceAll('[[ENTRY_PLACEHOLDER]]', 'index.html');
   const nodes = { status: { textContent: '' } };
   const saved = new Map(Object.entries(options.seed || {}));
   let target;
@@ -126,7 +127,7 @@ function testSelectExploit(options) {
   vm.createContext(sandbox);
   const code = `(function() {
     ${autoloaderSrc.replace('return async function', 'return selectExploit; return async function')}
-  })()(${JSON.stringify(options.api || {})})`;
+  })()(${JSON.stringify(options.api || {})}${options.forced !== undefined ? ', ' + JSON.stringify(options.forced) : ''})`;
   return vm.runInContext(code, sandbox);
 }
 
@@ -223,6 +224,26 @@ function testSelectExploit(options) {
   assert(desk1300.file.endsWith('relapse.lua'));
   assert.deepEqual([...desk1300.args], ['compat=remote_lua_loader']);
 
+  //    Forced exploit (dual build entry pages) wins regardless of network status, but
+  //    falls back to automatic rules where the firmware cannot run it.
+  for (const fw of ['7.00', '9.00', '11.40', '12.00']) {
+    for (const onLine of [true, false]) {
+      const p = testSelectExploit({ fw, onLine, forced: 'poops' });
+      assert(p.file.endsWith('poops.js'), fw + ' forced poops (onLine: ' + onLine + ')');
+      assert.match(p.reason, /forced/);
+      const r = testSelectExploit({ fw, onLine, forced: 'relapse' });
+      assert(r.file.endsWith('relapse.lua'), fw + ' forced relapse (onLine: ' + onLine + ')');
+      assert.deepEqual([...r.args], ['compat=remote_lua_loader']);
+      assert.equal(!!r.warning, !onLine, 'forced relapse warns only when offline');
+    }
+  }
+  const poopsOn1300 = testSelectExploit({ fw: '13.00', onLine: false, forced: 'poops' });
+  assert(poopsOn1300.file.endsWith('relapse.lua'), 'forced poops on 13.00 falls back to relapse');
+  assert.match(poopsOn1300.reason, /not supported/);
+  const relapseOn905 = testSelectExploit({ fw: '9.05', onLine: true, forced: 'relapse' });
+  assert(relapseOn905.file.endsWith('poops.js'), 'forced relapse on 9.05 falls back to poops');
+  assert.match(relapseOn905.reason, /not supported/);
+
   // 6. Test the orchestrator execution flow in payloads/autoloader.js
   const AsyncFunction = (async function () {}).constructor;
   const runner = new AsyncFunction('api', autoloaderSrc);
@@ -302,6 +323,24 @@ function testSelectExploit(options) {
     }
   }
 
+  // Flow D: entry page forces the exploit through the second payload argument
+  //         (dual build: poops.html / relapse.html).
+  for (const [forced, file] of [['poops', 'poops.js'], ['relapse', 'relapse.lua']]) {
+    const api = makeMockApi({ elfldrRunning: false, jailbroken: false });
+    api.args = ['custom.elf', forced];
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => ({ ok: true, text: async () => '// code for ' + url });
+    try {
+      const run = await runner(api);
+      if (typeof run === 'function') await run(api);
+      assert(api.executed[0].code.includes(file), forced + ' arg must run ' + file);
+      assert(api.logs.some(l => l.msg.includes('Forced-dispatch')), forced + ' must log forced dispatch');
+      assert.equal(api.executed[1].payloadArgs[0], 'custom.elf');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  }
+
   // 7. Modular AppCache build architecture:
   const makefile = fs.readFileSync('Makefile', 'utf8');
   assert(makefile.includes('build/autoloader'),
@@ -313,8 +352,18 @@ function testSelectExploit(options) {
   if (fs.existsSync(dist)) {
     const manifest = fs.readFileSync(dist, 'utf8');
     assert(manifest.includes('/index.html'), 'index.html must be cached');
-    assert(!manifest.includes('/poops.html') && !manifest.includes('/relapse.html'),
-      'manifest should not contain obsolete poops.html or relapse.html');
+    // auto build: no per-exploit pages. dual build: each forced entry page and
+    // its stable /app/ pointer (the homescreen deeplink targets) are cached.
+    const lines = manifest.split('\n');
+    const entries = ['poops.html', 'relapse.html'];
+    const present = entries.filter(e => manifest.includes('/' + e));
+    if (present.length) {
+      for (const e of entries) {
+        assert(lines.includes('/app/' + e), 'dual manifest must cache pointer /app/' + e);
+        assert(lines.some(l => /^\/app\/[^/]+\//.test(l) && l.endsWith('/' + e)),
+          'dual manifest must cache the versioned ' + e);
+      }
+    }
   }
 
   // 8. The server holds no selection state and gates manifest per request:

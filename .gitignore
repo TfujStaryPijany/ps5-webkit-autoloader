@@ -9,6 +9,8 @@ include/file_registry.c
 include/.file_registry.stamp
 include/wkali_version.h
 assets/param.json
+assets/param-*.json
+assets/icon0-*.png
 assets/icon0.png
 assets/icon.ico
 frontend/installer-page/logo.svg
@@ -19,8 +21,10 @@ build/
 dist/
 webkit-autoloader-host.py
 webkit-autoloader-host_v*.py
+webkit-autoloader-*-host_v*.py
 webkit-autoloader-host.exe
 webkit-autoloader-host_v*.exe
+webkit-autoloader-*-host_v*.exe
 webkit-autoloader-host.spec
 
 # OS / Python / logs / local references

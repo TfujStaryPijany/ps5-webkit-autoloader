@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [fork: dual shortcuts] - 2026-11-19
+
+* **Two homescreen shortcuts from one installer** (`make VARIANT=dual`, `./build_dual.sh`): "WebKit Autoloader Poops" and "WebKit Autoloader Relapse", each forcing its exploit regardless of the network state. Motivation: on FW 11.40 Relapse did not work for me, and the automatic choice only uses Poops when offline, while FTP and other payloads need the network.
+* **Forced exploit via payload argument**: `poops.html` / `relapse.html` pass `poops` / `relapse` to `autoloader.js`; automatic rules apply only where the firmware cannot run the forced exploit.
+* **Multi-app installer** (`src/app_installer.c`) with labelled per-app icons; separate port 18182 so the original WKAL00001 install is untouched.
+* **Windows `.exe` without Windows**: `./build_exe_wine.sh` (PyInstaller under Wine, UTF-8 mode so the console output cannot crash it).
+
 ## [v0.7.1] - 2026-11-08
 
 * **Fixed Poops stability**: A stability fix for Relapse in v0.7.0 was unintentionally affecting Poops, causing slower runs and more kernel panics.
