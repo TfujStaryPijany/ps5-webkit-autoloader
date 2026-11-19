@@ -15,8 +15,8 @@
 ## About this fork: separate Poops and Relapse shortcuts
 
 This is a fork of [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)
-(based on v0.7.1). All credit for the autoloader, the exploits and the tooling
-goes to the original authors. The fork only changes **how the exploit is chosen**.
+(based on v0.7.1). **All credits go to [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**
+and the authors listed in [Credits](#credits). The fork only changes **how the exploit is chosen**.
 
 **Why:** upstream picks the exploit automatically: Relapse whenever a network
 connection is active, Poops only when offline. On my PS5 (FW 11.40) Relapse
@@ -159,6 +159,7 @@ a local page preview. See [ARCHITECTURE.md](ARCHITECTURE.md) for the build and c
 
 ## Credits
 
+* **All credits go to [itsPLK](https://github.com/itsPLK) and the original [ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**. This fork only adds the separate Poops / Relapse shortcuts.
 * **[jordyidk](https://github.com/jordyidk)** & contributors — [slopkit (Poops)](https://github.com/jordyidk/slopkit)
 * **[soniciso1](https://github.com/soniciso1)**, **[ntfargo](https://github.com/ntfargo)** & contributors — [Relapse](https://github.com/soniciso1/relapse)
 * **[notmaj0r](https://github.com/notmaj0r)** — [Lua port of Relapse](https://github.com/notmaj0r/remote_lua_loader)
@@ -177,16 +178,6 @@ This project is licensed under the GPL-3.0 License.
 
 ## Donate
 - [donate to PLK](DONATE.md)
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=itsplk%2Fps5-webkit-autoloader&type=date&releases=&legend=bottom-right">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=itsplk/ps5-webkit-autoloader&type=date&theme=dark&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=itsplk/ps5-webkit-autoloader&type=date&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=itsplk/ps5-webkit-autoloader&type=date&legend=bottom-right" />
- </picture>
-</a>
 
 ## Dual build: one installer, two homescreen shortcuts
 
