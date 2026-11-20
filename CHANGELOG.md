@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [fork: dual shortcuts, v0.8.0-dual] - 2026-11-20
+
+* **Rebased on upstream v0.8.0** (Wobkot Relapse). The forced Relapse shortcut now runs Wobkot's `relapse.js`, also on 9.05; the forced Poops shortcut falls back to Relapse outside FW 7.00-12.00, where Poops has no profiles.
+
 ## [fork: dual shortcuts] - 2026-11-19
 
-* **Two homescreen shortcuts from one installer** (`make VARIANT=dual`, `./build_dual.sh`): "WebKit Autoloader Poops" and "WebKit Autoloader Relapse", each forcing its exploit regardless of the network state. Motivation: on FW 11.40 Relapse did not work for me, and the automatic choice only uses Poops when offline, while FTP and other payloads need the network.
+* **Two homescreen shortcuts from one installer** (`make VARIANT=dual`, `./build_dual.sh`): "WebKit Autoloader Poops" and "WebKit Autoloader Relapse", each forcing its exploit regardless of the network state. Motivation: on FW 11.40 Relapse (the Lua port used up to v0.7.1) did not work for me, and the automatic choice only uses Poops when offline, while FTP and other payloads need the network.
 * **Forced exploit via payload argument**: `poops.html` / `relapse.html` pass `poops` / `relapse` to `autoloader.js`; automatic rules apply only where the firmware cannot run the forced exploit.
 * **Multi-app installer** (`src/app_installer.c`) with labelled per-app icons; separate port 18182 so the original WKAL00001 install is untouched.
 * **Windows `.exe` without Windows**: `./build_exe_wine.sh` (PyInstaller under Wine, UTF-8 mode so the console output cannot crash it).
+
+## [v0.8.0] - 2026-11-20
+
+* **Migrated to Wobkot**: Now uses [ufm42's Wobkot](https://github.com/ufm42/wobkot)
+  base and Relapse implementation as the preferred exploit,
+  with Poops used automatically as the fallback where appropriate.
+  This expands supported firmware to **6.00–13.60**.
+
+### Dependencies
+* Updated [ps5-webkit-remote-loader](https://github.com/itsPLK/ps5-webkit-remote-loader)
+  to commit `2c87626`.
 
 ## [v0.7.1] - 2026-11-08
 

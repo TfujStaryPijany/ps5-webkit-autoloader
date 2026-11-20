@@ -2,10 +2,10 @@
 //
 // 1. Checks if an ELF loader daemon is already listening on loopback port 9021.
 // 2. Checks if the process is already jailbroken (uid 0).
-// 3. If exploit is needed, selects between relapse.lua and poops.js. The
-//    second payload argument (set per entry page, e.g. poops.html/relapse.html
-//    of the "dual" build) forces one exploit; otherwise it picks based on
-//    firmware version and network status (matching ps5-lua-autoloader).
+// 3. If exploitation is needed, selects Wobkot Relapse or Poops. The second
+//    payload argument (set per entry page, e.g. poops.html/relapse.html of the
+//    "dual" build) forces one exploit; otherwise it picks from firmware and
+//    network status, matching the pre-Wobkot automatic policy.
 // 4. Pre-fetches all needed assets before kernel exploit runs.
 // 5. Executes the chosen exploit via api.executePayload().
 // 6. Executes autoload.js to stage and stream the target ELF to elfldr on 9021.
@@ -23,9 +23,9 @@ const POOPS = {
   args: [],
 };
 const RELAPSE = {
-  file: "payloads/lua/relapse.lua",
-  fallback: "relapse.lua",
-  args: ["compat=remote_lua_loader"],
+  file: "payloads/relapse.js",
+  fallback: "relapse.js",
+  args: [],
 };
 
 function failed(val) {
@@ -80,9 +80,7 @@ function selectExploit(api, forced) {
 
   let match = typeof navigator !== "undefined" && navigator.userAgent
     ? /PlayStation 5\/(\d+\.\d+)/.exec(navigator.userAgent) : null;
-  if (!match && fwArg) {
-    match = ["PlayStation 5/" + fwArg, fwArg];
-  }
+  if (!match && fwArg) match = ["PlayStation 5/" + fwArg, fwArg];
 
   if (match) {
     fw = parseFloat(match[1]);
@@ -92,18 +90,19 @@ function selectExploit(api, forced) {
     fwExact = api.fw;
   }
 
-  const is905 = fwExact === "9.05" || Math.abs(fw - 9.05) < 0.001;
   const isOnline = typeof navigator !== "undefined" && !!navigator.onLine;
-  const needsRelapse = fw > 12.00 && fw <= 13.60;
+  // Poops profiles cover FW 7.00-12.00; Wobkot Relapse covers 6.00-13.60.
+  const poopsSupported = fw >= 7.00 && fw <= 12.00;
 
   if (forced === undefined) forced = forcedExploit(api);
 
   // Forced variant: honour it unless the firmware cannot run that exploit at
-  // all, in which case fall through to the automatic rules below.
-  if (forced === "poops" && !needsRelapse) {
+  // all (Poops outside 7.00-12.00), in which case fall through to the
+  // automatic rules below. An unknown firmware (0) keeps the forced choice.
+  if (forced === "poops" && (fw === 0 || poopsSupported)) {
     return Object.assign({ reason: "forced by Poops shortcut" }, POOPS);
   }
-  if (forced === "relapse" && !is905) {
+  if (forced === "relapse") {
     return Object.assign({
       reason: "forced by Relapse shortcut",
       warning: isOnline ? null
@@ -114,16 +113,17 @@ function selectExploit(api, forced) {
     ? `forced ${forced} is not supported on FW ${fwExact || "?"}, falling back: `
     : "";
 
-  if (needsRelapse) {
-    return Object.assign({ reason: override + "FW > 12.00 requires Relapse" }, RELAPSE);
-  }
-  if (is905) {
-    return Object.assign({ reason: override + "FW 9.05 requires Poops" }, POOPS);
+  if (fw < 7.00 || (fw > 12.00 && fw <= 13.60)) {
+    return Object.assign({
+      reason: override + (fw < 7.00
+        ? "Poops profiles begin at FW 7.00"
+        : "FW > 12.00 requires Relapse"),
+    }, RELAPSE);
   }
   if (isOnline) {
     return Object.assign({ reason: override + "network active" }, RELAPSE);
   }
-  return Object.assign({ reason: override + "offline mode (FW <= 12.00)" }, POOPS);
+  return Object.assign({ reason: override + "offline mode (FW 7.00-12.00)" }, POOPS);
 }
 
 async function fetchText(primary, fallback) {
@@ -179,8 +179,9 @@ return async function (api) {
   } catch (e) {}
 
   // Step 5: Run the selected exploit
-  const exploitArgs = choice.args || (choice.file.endsWith(".lua") ? ["compat=remote_lua_loader"] : []);
-  await api.executePayload(exploitCode, exploitArgs);
+  const exploitResult = await api.executePayload(exploitCode, choice.args || []);
+  if (exploitResult && exploitResult.failed)
+    throw new Error(choice.file + " failed; refusing to send the ELF payload");
 
   // Step 6: Transfer the autoloader ELF payload
   await api.log(`[*] Staging and sending ${elfName}...`, "info");

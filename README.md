@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">PS5 WebKit Autoloader</h1>
 &nbsp;
-<p align="center">Automatically loads the WebKit exploit and your elf payloads.<br>Supports firmwares <b>7.00&ndash;13.60</b>.</p>
+<p align="center">Automatically loads the WebKit exploit and your elf payloads.<br>Supports firmwares <b>6.00&ndash;13.60</b>.</p>
 
 <p align="center">
     <b>Other Autoloaders:</b><br>
@@ -15,7 +15,7 @@
 ## About this fork: separate Poops and Relapse shortcuts
 
 This is a fork of [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)
-(based on v0.7.1). **All credits go to [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**
+(based on v0.8.0). **All credits go to [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**
 and the authors listed in [Credits](#credits). The fork only changes **how the exploit is chosen**.
 
 **Why:** upstream picks the exploit automatically: Relapse whenever a network
@@ -23,6 +23,11 @@ connection is active, Poops only when offline. On my PS5 (FW 11.40) Relapse
 did not work, while Poops does. But I want to stay connected to the network
 (FTP and other payloads that need it), so with the automatic choice I could
 never get Poops without pulling the network first.
+
+Since upstream v0.8.0 Relapse is ufm42's Wobkot implementation instead of the
+Lua port that failed on my 11.40, so it may work there now. The automatic rule
+(network connected means Relapse) is unchanged, so the separate shortcuts are
+still the way to pick Poops with the network up.
 
 **What changed:** one installer (`VARIANT=dual`) now adds **two homescreen
 shortcuts**, each forcing its exploit regardless of the network state:
@@ -40,7 +45,7 @@ Summary of code changes:
 
 - `payloads/autoloader.js`: the exploit can be forced through the second
   payload argument of the entry page; the automatic rules only apply when the
-  firmware cannot run the forced exploit (Poops above 12.00, Relapse on 9.05).
+  firmware cannot run the forced exploit (Poops outside 7.00-12.00).
 - `src/app_installer.c`: installs several homescreen apps from one installer
   (replaces the shared single-app installer from remote-loader for this build).
 - `tools/gen_version.py`: variant table (`auto` = upstream, `dual`) with title
@@ -152,17 +157,18 @@ etaHEN.elf
 
 If you want to create or test your own WebKit payloads, check out [ps5-webkit-remote-loader](https://github.com/itsPLK/ps5-webkit-remote-loader), which this project is based on. It lets you send and run JavaScript payloads directly over the network on port 9027.
 
-Build both release artifacts with `./build_release.sh` (Docker required). The build
-uses remote-loader's standalone HTML and host builders directly. Run `make test` for
-the offline checks (payload, installer, and exploit-selection flow) and `make dev` for
-a local page preview. See [ARCHITECTURE.md](ARCHITECTURE.md) for the build and cache layout.
+Build both release artifacts with `./build_release.sh` (Docker required). The modular
+page uses remote-loader's vendored Wobkot userland with Relapse and Poops.
+`autoloader.js` remains the first payload and owns exploit selection; `autoload.js`
+is executed last, after the selected exploit has started elfldr. Run `make test` for the offline
+checks and `make dev` for a local preview. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Credits
 
 * **All credits go to [itsPLK](https://github.com/itsPLK) and the original [ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**. This fork only adds the separate Poops / Relapse shortcuts.
+* **[ufm42](https://github.com/ufm42)** — [Wobkot](https://github.com/ufm42/wobkot), the active userland, ROP, and Relapse base
 * **[jordyidk](https://github.com/jordyidk)** & contributors — [slopkit (Poops)](https://github.com/jordyidk/slopkit)
 * **[soniciso1](https://github.com/soniciso1)**, **[ntfargo](https://github.com/ntfargo)** & contributors — [Relapse](https://github.com/soniciso1/relapse)
-* **[notmaj0r](https://github.com/notmaj0r)** — [Lua port of Relapse](https://github.com/notmaj0r/remote_lua_loader)
 * **[john-tornblom](https://github.com/john-tornblom)** — [ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk/) and [elfldr](https://github.com/ps5-payload-dev/elfldr)
 * See [ps5-webkit-remote-loader](https://github.com/itsPLK/ps5-webkit-remote-loader) for runtime and toolchain credits.
 * Everyone else contributing to the PS5 homebrew scene.
@@ -194,7 +200,7 @@ Port 18182 is its own WebKit origin, so the original WebKit Autoloader
 (WKAL00001, port 18181) is left untouched. Icons get a labelled colour band.
 The forced exploit is passed as the orchestrator's second payload argument
 and only falls back to the automatic rules where the firmware cannot run it
-(Poops above 12.00, Relapse on 9.05).
+(Poops outside 7.00-12.00).
 
 ```sh
 ./build_dual.sh        # webkit-autoloader-dual-installer_v*.elf + -host_v*.py
