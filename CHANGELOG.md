@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [fork: dual shortcuts, v0.8.3-dual] - 2026-11-21
+
+* **Updated to upstream v0.8.3** (Relapse on FW 5.xx, offset updates for 5.xx, 6.0x and 13.40/13.60). No changes to the shortcuts.
+
 ## [fork: dual shortcuts, v0.8.0-dual] - 2026-11-20
 
 * **Rebased on upstream v0.8.0** (Wobkot Relapse). The forced Relapse shortcut now runs Wobkot's `relapse.js`, also on 9.05; the forced Poops shortcut falls back to Relapse outside FW 7.00-12.00, where Poops has no profiles.
@@ -12,6 +16,29 @@ All notable changes to this project will be documented in this file.
 * **Forced exploit via payload argument**: `poops.html` / `relapse.html` pass `poops` / `relapse` to `autoloader.js`; automatic rules apply only where the firmware cannot run the forced exploit.
 * **Multi-app installer** (`src/app_installer.c`) with labelled per-app icons; separate port 18182 so the original WKAL00001 install is untouched.
 * **Windows `.exe` without Windows**: `./build_exe_wine.sh` (PyInstaller under Wine, UTF-8 mode so the console output cannot crash it).
+
+## [v0.8.3] - 2026-11-21
+
+### Dependencies
+* Updated Wobkot to [`8abe4a9`](https://github.com/ufm42/wobkot/tree/8abe4a9)
+  - Updated offsets for FW 5.00, 5.02, 5.10, 5.50, 6.00, 6.02, and 6.50.
+
+## [v0.8.2] - 2026-11-20
+
+* Fixed FW 5.xx being rejected by the Wobkot adapter before exploitation.
+
+### Dependencies
+* Updated [ps5-webkit-remote-loader](https://github.com/itsPLK/ps5-webkit-remote-loader)
+  to commit [`073718c`](https://github.com/itsPLK/ps5-webkit-remote-loader/tree/073718c) (v0.3.1).
+
+## [v0.8.1] - 2026-11-20
+
+### Dependencies
+* Updated Wobkot to [`38ad28e`](https://github.com/ufm42/wobkot/tree/38ad28e)
+  - Added Relapse support for FW 5.00, 5.02, 5.10, and 5.50.
+  - Updated offsets for FW 6.00, 6.02, 13.40, and 13.60.
+
+This expands supported firmware to **5.00–13.60**.
 
 ## [v0.8.0] - 2026-11-20
 

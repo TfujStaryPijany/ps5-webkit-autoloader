@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">PS5 WebKit Autoloader</h1>
 &nbsp;
-<p align="center">Automatically loads the WebKit exploit and your elf payloads.<br>Supports firmwares <b>6.00&ndash;13.60</b>.</p>
+<p align="center">Automatically loads the WebKit exploit and your elf payloads.<br>Supports firmwares <b>5.00&ndash;13.60</b>.</p>
 
 <p align="center">
     <b>Other Autoloaders:</b><br>
@@ -15,7 +15,7 @@
 ## About this fork: separate Poops and Relapse shortcuts
 
 This is a fork of [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)
-(based on v0.8.0). **All credits go to [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**
+(based on v0.8.3). **All credits go to [itsPLK/ps5-webkit-autoloader](https://github.com/itsPLK/ps5-webkit-autoloader)**
 and the authors listed in [Credits](#credits). The fork only changes **how the exploit is chosen**.
 
 **Why:** upstream picks the exploit automatically: Relapse whenever a network
